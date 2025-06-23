@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANS Recipe Book</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-utensils"></i>
+                <h1>MANS Coooking Recipe</h1>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn active" data-view="recipes">
+                    <i class="fas fa-utensils"></i>
+                    <span>Recipes</span>
+                </button>
+                <button class="nav-btn" data-view="search">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </button>
+                <button class="nav-btn" data-view="favorites">
+                    <i class="fas fa-heart"></i>
+                    <span>Favorites</span>
+                    <span class="badge" id="favorite-count">0</span>
+                </button>
+                <button class="nav-btn" data-view="create">
+                    <i class="fas fa-plus"></i>
+                    <span>Create</span>
+                </button>
+                <button class="nav-btn" data-view="shopping">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Shopping</span>
+                    <span class="badge" id="cart-count">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Password Modal -->
+    <div class="modal-overlay" id="password-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Authentication Required</h3>
+                <button class="modal-close" onclick="closePasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Enter password to edit or delete recipes:</p>
+                <input type="password" id="password-input" placeholder="Enter password">
+                <div class="password-hint">
+                    <small>Hint: Default password is "admin123"</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closePasswordModal()">Cancel</button>
+                <button class="btn-primary" onclick="verifyPassword()">Verify</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <button class="modal-close" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this recipe?</p>
+                <p><strong id="delete-recipe-title"></strong></p>
+                <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn-danger" onclick="confirmDelete()">Delete Recipe</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Search Bar -->
+        <div class="search-container" id="search-container">
+            <div class="search-bar">
+                <div class="search-input-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search recipes, ingredients, or cuisines...">
+                </div>
+                <button class="filter-btn" id="filter-toggle">
+                    <i class="fas fa-filter"></i>
+                    Filters
+                </button>
+                <button class="clear-btn" id="clear-filters" style="display: none;">
+                    <i class="fas fa-times"></i>
+                    Clear
+                </button>
+            </div>
+            
+            <div class="filters" id="filters" style="display: none;">
+                <div class="filter-group">
+                    <label>Cuisine</label>
+                    <select id="cuisine-filter">
+                        <option value="All">All</option>
+                        <option value="Mediterranean">Mediterranean</option>
+                        <option value="Italian">Italian</option>
+                        <option value="Thai">Thai</option>
+                        <option value="French">French</option>
+                        <option value="Asian Fusion">Asian Fusion</option>
+                        <option value="Modern American">Modern American</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Meal Type</label>
+                    <select id="meal-filter">
+                        <option value="All">All</option>
+                        <option value="Breakfast">Breakfast</option>
+                        <option value="Lunch">Lunch</option>
+                        <option value="Dinner">Dinner</option>
+                        <option value="Dessert">Dessert</option>
+                        <option value="Snack">Snack</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Difficulty</label>
+                    <select id="difficulty-filter">
+                        <option value="All">All</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipe List View -->
+        <div class="view" id="recipes-view">
+            <div class="recipes-grid" id="recipes-grid"></div>
+        </div>
+
+        <!-- Recipe Detail View -->
+        <div class="view" id="recipe-detail-view" style="display: none;">
+            <div class="recipe-detail" id="recipe-detail"></div>
+        </div>
+
+        <!-- Create Recipe View -->
+        <div class="view" id="create-view" style="display: none;">
+            <div class="recipe-form-container">
+                <div class="form-header">
+                    <h2>Create New Recipe</h2>
+                    <div class="form-actions">
+                        <button class="btn-secondary" id="cancel-create">Cancel</button>
+                        <button class="btn-primary" id="save-recipe">
+                            <i class="fas fa-save"></i>
+                            Save Recipe
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="recipe-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Recipe Title</label>
+                            <input type="text" id="recipe-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Image URL</label>
+                            <input type="url" id="recipe-image">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="recipe-description" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Prep Time (minutes)</label>
+                            <input type="number" id="prep-time" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cook Time (minutes)</label>
+                            <input type="number" id="cook-time" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Servings</label>
+                            <input type="number" id="servings" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Difficulty</label>
+                            <select id="difficulty" required>
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cuisine</label>
+                            <input type="text" id="cuisine" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Meal Type</label>
+                            <select id="meal-type" required>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Dessert">Dessert</option>
+                                <option value="Snack">Snack</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="ingredients-section">
+                        <div class="section-header">
+                            <h3>Ingredients</h3>
+                            <button type="button" class="btn-add" id="add-ingredient">
+                                <i class="fas fa-plus"></i>
+                                Add Ingredient
+                            </button>
+                        </div>
+                        <div id="ingredients-list">
+                            <div class="ingredient-row">
+                                <input type="text" placeholder="Ingredient name" class="ingredient-name">
+                                <input type="number" placeholder="Amount" class="ingredient-amount">
+                                <input type="text" placeholder="Unit" class="ingredient-unit">
+                                <button type="button" class="btn-remove">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="instructions-section">
+                        <div class="section-header">
+                            <h3>Instructions</h3>
+                            <button type="button" class="btn-add" id="add-instruction">
+                                <i class="fas fa-plus"></i>
+                                Add Step
+                            </button>
+                        </div>
+                        <div id="instructions-list">
+                            <div class="instruction-row">
+                                <span class="step-number">1</span>
+                                <textarea placeholder="Step 1 instructions" class="instruction-text"></textarea>
+                                <button type="button" class="btn-remove">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Shopping List View -->
+        <div class="view" id="shopping-view" style="display: none;">
+            <div class="shopping-list-container">
+                <div class="shopping-header">
+                    <div>
+                        <h2>Shopping List</h2>
+                        <p class="shopping-stats" id="shopping-stats">0 items to buy • 0 completed</p>
+                    </div>
+                    <button class="btn-danger" id="clear-completed" style="display: none;">
+                        Clear Completed
+                    </button>
+                </div>
+                <div class="shopping-list" id="shopping-list">
+                    <div class="empty-state">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h3>Your shopping list is empty</h3>
+                        <p>Add ingredients from recipes to start building your shopping list.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+     <footer class="site-footer sticky-footer">
+        <p>&copy; 2025 — Developed by Shukri Muheeth</p>
+    </footer>
+</body>
+</html>
